@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T&D Learning Journey</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;font-family:"Segoe UI",Arial,sans-serif;}
+
+/* MAP */
+.map-wrap{position:relative;display:inline-block;width:100%;max-width:900px;}
+.map-wrap img{display:block;width:100%;height:auto;border-radius:12px;}
+
+/* HOTSPOTS - invisible clickable areas */
+.sign-hotspot{position:absolute;border-radius:6px;cursor:pointer;background:transparent;}
+.sign-hotspot:hover{background:rgba(255,255,255,0.07);}
+
+/* VIDEO OVERLAY */
+.vid-overlay{display:none;position:fixed;inset:0;background:#000;z-index:100;flex-direction:column;}
+.vid-overlay.show{display:flex;}
+.yt-frame{flex:1;width:100%;border:none;}
+.vid-footer{background:#111;padding:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn-gold{background:#FFD700;border:none;color:#1a1a2e;font-size:13px;font-weight:800;padding:11px 24px;border-radius:30px;cursor:pointer;}
+.btn-outline{background:transparent;border:2px solid #FFD700;color:#FFD700;font-size:13px;font-weight:700;padding:11px 24px;border-radius:30px;cursor:pointer;}
+
+/* QUIZ OVERLAY */
+.quiz-overlay{display:none;position:fixed;inset:0;z-index:200;overflow-y:auto;padding:20px;}
+.quiz-overlay.show{display:block;}
+.quiz-overlay{background:linear-gradient(135deg,#0d1b2a,#0a1520);}
+.quiz-box{max-width:520px;margin:0 auto;padding-bottom:30px;}
+.quiz-header{text-align:center;padding:24px 0 16px;}
+.quiz-icon{font-size:32px;margin-bottom:8px;}
+.quiz-header h2{font-size:16px;font-weight:900;color:#90C8FF;margin-bottom:4px;}
+.quiz-header p{font-size:11px;margin-top:4px;opacity:0.6;color:#fff;}
+.q-prog-bar{background:rgba(255,255,255,0.1);border-radius:10px;height:6px;margin:0 0 20px;overflow:hidden;}
+.q-prog-fill{height:100%;border-radius:10px;transition:width 0.4s ease;background:linear-gradient(90deg,#4080C0,#90C8FF);}
+.question-card{border-radius:16px;padding:18px;margin-bottom:12px;background:rgba(200,230,255,0.05);border:1px solid rgba(100,180,255,0.2);}
+.q-num{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;color:#60A0E0;}
+.q-text{font-size:14px;line-height:1.6;font-weight:600;margin-bottom:14px;color:#E0F0FF;}
+.options{display:flex;flex-direction:column;gap:8px;}
+.opt-btn{border-radius:10px;padding:10px 14px;font-size:13px;text-align:left;cursor:pointer;transition:all 0.2s;border:1.5px solid;background:rgba(100,180,255,0.05);border-color:rgba(100,180,255,0.2);color:rgba(200,230,255,0.85);}
+.opt-btn:hover{background:rgba(64,128,192,0.2);border-color:#60A0E0;}
+.opt-btn.correct{background:rgba(50,200,100,0.2)!important;border-color:#50C878!important;color:#90FFB0!important;}
+.opt-btn.wrong{background:rgba(255,80,80,0.2)!important;border-color:#FF6060!important;color:#FFB0B0!important;}
+.opt-btn:disabled{cursor:default;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+.shake{animation:shake 0.4s ease;}
+@keyframes bounceA{0%,100%{transform:scale(1);}40%{transform:scale(1.08);}70%{transform:scale(0.96);}}
+.bounce{animation:bounceA 0.4s ease;}
+.score-screen{display:none;text-align:center;padding:40px 20px;}
+.score-screen.show{display:block;}
+.score-circle{width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 20px;border:4px solid #60A0E0;background:rgba(64,128,192,0.15);}
+.score-num{font-size:40px;font-weight:900;color:#90C8FF;}
+.score-total{font-size:13px;opacity:0.5;color:#fff;}
+.score-msg{color:#E0F0FF;font-size:17px;font-weight:800;margin-bottom:8px;}
+.score-sub{color:rgba(180,210,255,0.6);font-size:12px;margin-bottom:24px;line-height:1.6;}
+.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+/* VIDEO placeholder */
+.vid-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0a0a1a;}
+.vid-placeholder .big-icon{font-size:60px;opacity:0.3;}
+.vid-placeholder p{color:rgba(255,255,255,0.35);font-size:14px;}
+
+/* Station title bar in video */
+.station-title-bar{background:rgba(0,0,0,0.9);padding:10px 16px;border-bottom:3px solid #FFD700;display:flex;align-items:center;gap:10px;}
+.stn-badge{background:#FFD700;color:#1a1a2e;font-weight:800;font-size:13px;padding:4px 10px;border-radius:8px;}
+.stn-name{color:#fff;font-size:13px;font-weight:600;}
+.stn-sub{color:rgba(255,255,255,0.5);font-size:11px;}
+</style>
+</head>
+<body>
+
+<div class="map-wrap">
+  <img src="map.jpg" alt="T&D Learning Journey Map" id="mapImg">
+
+  <!-- Hotspot positions — invisible clickable areas over each station title -->
+  <div class="sign-hotspot" style="left:1%;top:8%;width:16%;height:12%;" onclick="openVid(0)"></div>
+  <div class="sign-hotspot" style="left:17%;top:22%;width:22%;height:12%;" onclick="openVid(1)"></div>
+  <div class="sign-hotspot" style="left:43%;top:22%;width:26%;height:12%;" onclick="openVid(2)"></div>
+  <div class="sign-hotspot" style="left:1%;top:48%;width:22%;height:12%;" onclick="openVid(3)"></div>
+  <div class="sign-hotspot" style="left:35%;top:48%;width:28%;height:12%;" onclick="openVid(4)"></div>
+  <div class="sign-hotspot" style="left:1%;top:72%;width:22%;height:12%;" onclick="openVid(5)"></div>
+  <div class="sign-hotspot" style="left:35%;top:72%;width:28%;height:12%;" onclick="openVid(6)"></div>
+</div>
+
+<!-- VIDEO OVERLAY -->
+<div class="vid-overlay" id="vidOverlay">
+  <div class="station-title-bar" id="stationTitleBar">
+    <span class="stn-badge" id="stnBadge">1</span>
+    <div>
+      <div class="stn-name" id="stnName"></div>
+      <div class="stn-sub" id="stnSub"></div>
+    </div>
+  </div>
+  <div id="vidArea" style="flex:1;display:flex;flex-direction:column;"></div>
+  <div class="vid-footer">
+    <button class="btn-outline" onclick="closeVid()">🗺️ Back to Map</button>
+    <button class="btn-gold" onclick="openSQ()">📝 Take Quiz</button>
+  </div>
+</div>
+
+<!-- QUIZ OVERLAY -->
+<div class="quiz-overlay" id="sqOverlay">
+  <div class="quiz-box">
+    <div class="quiz-header">
+      <div class="quiz-icon">📝</div>
+      <h2 id="sqTitle"></h2>
+      <p id="sqSub"></p>
+    </div>
+    <div class="q-prog-bar"><div class="q-prog-fill" id="sqProg" style="width:0%"></div></div>
+    <div id="sqArea"></div>
+    <div class="score-screen" id="sqScore">
+      <div class="score-circle">
+        <div class="score-num" id="sqScoreNum">0</div>
+        <div class="score-total" id="sqScoreTotal">/3</div>
+      </div>
+      <div class="score-msg" id="sqScoreMsg"></div>
+      <div class="score-sub">📸 Screenshot your result!</div>
+      <div class="btn-row">
+        <button class="btn-outline" onclick="closeSQ()">← Back to Video</button>
+        <button class="btn-gold" onclick="closeVid();closeSQ()">🗺️ Back to Map</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var stations=[
+  {num:"1",name:"Entrance",sub:"Introduction to Training & Development",phase:"Phase 1 — Before Training",video:null,
+   quiz:[
+    {q:"What does T&D stand for in HRM?",opts:["Talent & Discipline","Training & Development","Tasks & Duties","Teams & Departments"],ans:1},
+    {q:"T&D helps employees to:",opts:["Avoid all risks","Perform better & prepare for future roles","Only earn more salary","Work less hours"],ans:1},
+    {q:"T&D is a planned process within which field?",opts:["Finance","Operations","Human Resource Management","Marketing"],ans:2}
+  ]},
+  {num:"2",name:"Reception Area",sub:"Importance of Prioritising Training Needs",phase:"Phase 1 — Before Training",video:null,
+   quiz:[
+    {q:"Why must organizations prioritise training needs?",opts:["Training is optional","Limited budget & time","All training is equal","Managers dislike training"],ans:1},
+    {q:"What does TNA stand for?",opts:["Training Network Analysis","Training Needs Analysis","Talent Needs Assessment","Team Needs Audit"],ans:1},
+    {q:"Prioritisation ensures resources go to:",opts:["The cheapest training","The longest training","The most impactful training","The newest training"],ans:2}
+  ]},
+  {num:"3",name:"Manager Decision Area",sub:"Factors in Training Prioritisation",phase:"Phase 1 — Before Training",video:null,
+   quiz:[
+    {q:"Which is NOT a factor in training prioritisation?",opts:["Relevance","Cost","Employee age","Time"],ans:2},
+    {q:"What does 'Relevance' mean in training prioritisation?",opts:["Training is cheap","Training is short","Training addresses a real performance gap","Training is online"],ans:2},
+    {q:"Which 4 factors form the prioritisation checklist?",opts:["Speed, Cost, Fun, Location","Relevance, Cost, Time, Resources","Budget, Staff, Tech, Space","Goals, Risk, Output, Staff"],ans:1}
+  ]},
+  {num:"4",name:"Training Room",sub:"Training Implementation",phase:"Phase 2 — During Training",video:null,
+   quiz:[
+    {q:"Which is a learning activity during training?",opts:["Sleeping","Role-play simulation","Reading only","Watching TV"],ans:1},
+    {q:"What should a trainer monitor during training?",opts:["Social media","Attendance & participation","Room temperature only","Lunch menu"],ans:1},
+    {q:"Which training method is NOT mentioned?",opts:["Classroom","On-the-job","E-learning","Telepathy"],ans:3}
+  ]},
+  {num:"5",name:"Evaluation Area",sub:"Training Evaluation — Kirkpatrick Model",phase:"Phase 2 — During Training",video:null,
+   quiz:[
+    {q:"What does Level 1 (Reaction) measure?",opts:["Business results","How participants feel about training","Skills applied at work","Knowledge gained"],ans:1},
+    {q:"Level 3 (Behaviour) measures what?",opts:["Participant reactions","Knowledge learned","Whether skills are applied at work","Business ROI"],ans:2},
+    {q:"How many levels are in the Kirkpatrick Model?",opts:["2","3","4","5"],ans:2}
+  ]},
+  {num:"6",name:"Workplace Area",sub:"Transfer of Training",phase:"Phase 3 — After Training",video:null,
+   quiz:[
+    {q:"What is 'Transfer of Training'?",opts:["Transferring employees","Applying learned skills at the workplace","Moving training to another location","Sending training materials"],ans:1},
+    {q:"Who plays a critical role in supporting training transfer?",opts:["Customers","Competitor companies","Supervisors & managers","IT department"],ans:2},
+    {q:"The ZUS Coffee example shows which phase?",opts:["Planning training","During training","Transfer of training at workplace","Evaluating training design"],ans:2}
+  ]},
+  {num:"7",name:"Results / ROI Area",sub:"Training Outcomes & Return on Investment",phase:"Phase 3 — After Training",video:null,
+   quiz:[
+    {q:"What does ROI stand for in training?",opts:["Return on Investment","Record of Improvement","Rate of Instruction","Review of Implementation"],ans:0},
+    {q:"Which is a training outcome?",opts:["Higher absenteeism","Lower productivity","Better performance","More errors"],ans:2},
+    {q:"How do you measure training ROI?",opts:["Count training days","Compare KPIs before and after training","Check trainer salary","Count number of slides"],ans:1}
+  ]}
+];
+
+var curStation=0, sqCurrent=0, sqScore=0;
+
+function openVid(i){
+  curStation=i;
+  var s=stations[i];
+  document.getElementById("stnBadge").textContent=s.num;
+  document.getElementById("stnName").textContent=s.name;
+  document.getElementById("stnSub").textContent=s.sub+" · "+s.phase;
+  var va=document.getElementById("vidArea");
+  if(s.video){
+    va.innerHTML='<iframe class="yt-frame" src="https://www.youtube.com/embed/'+s.video+'?autoplay=1" allowfullscreen></iframe>';
+  } else {
+    va.innerHTML='<div class="vid-placeholder"><div class="big-icon">▶️</div><p>Video coming soon</p></div>';
+  }
+  document.getElementById("vidOverlay").classList.add("show");
+}
+
+function closeVid(){
+  document.getElementById("vidOverlay").classList.remove("show");
+  document.getElementById("vidArea").innerHTML="";
+}
+
+function openSQ(){
+  var s=stations[curStation];
+  sqCurrent=0; sqScore=0;
+  document.getElementById("sqTitle").textContent="Quiz — "+s.name;
+  document.getElementById("sqSub").textContent=s.sub;
+  document.getElementById("sqScore").classList.remove("show");
+  document.getElementById("sqArea").style.display="block";
+  document.getElementById("sqProg").style.width="0%";
+  document.getElementById("sqOverlay").classList.add("show");
+  showSQ();
+}
+
+function showSQ(){
+  var s=stations[curStation];
+  var d=s.quiz[sqCurrent];
+  document.getElementById("sqProg").style.width=((sqCurrent/s.quiz.length)*100)+"%";
+  var L=["A","B","C","D"];
+  var h='<div class="question-card"><div class="q-num">QUESTION '+(sqCurrent+1)+' OF '+s.quiz.length+'</div>';
+  h+='<div class="q-text">'+d.q+'</div><div class="options">';
+  d.opts.forEach(function(o,i){h+='<button class="opt-btn" onclick="ansSQ('+i+')">'+L[i]+'. '+o+'</button>';});
+  h+='</div></div>';
+  document.getElementById("sqArea").innerHTML=h;
+}
+
+function ansSQ(i){
+  var s=stations[curStation];
+  var d=s.quiz[sqCurrent];
+  var btns=document.querySelectorAll("#sqArea .opt-btn");
+  btns.forEach(function(b){b.disabled=true;});
+  if(i===d.ans){
+    sqScore++;
+    btns[i].classList.add("correct");
+    btns[i].classList.add("bounce");
+    setTimeout(function(){sqCurrent++;if(sqCurrent<s.quiz.length){showSQ();}else{showSQResult();}},900);
+  } else {
+    btns[i].classList.add("wrong");
+    btns[i].classList.add("shake");
+    btns[d.ans].classList.add("correct");
+    setTimeout(function(){sqCurrent++;if(sqCurrent<s.quiz.length){showSQ();}else{showSQResult();}},1200);
+  }
+}
+
+function showSQResult(){
+  var s=stations[curStation];
+  document.getElementById("sqProg").style.width="100%";
+  document.getElementById("sqArea").style.display="none";
+  document.getElementById("sqScoreNum").textContent=sqScore;
+  document.getElementById("sqScoreTotal").textContent="/"+s.quiz.length;
+  var msg;
+  if(sqScore===s.quiz.length) msg="🎉 Perfect! Excellent work!";
+  else if(sqScore>=s.quiz.length-1) msg="👍 Good job! Almost perfect!";
+  else if(sqScore>=1) msg="💪 Keep studying! You can do better!";
+  else msg="📚 Review the content and try again!";
+  document.getElementById("sqScoreMsg").textContent=msg;
+  document.getElementById("sqScore").classList.add("show");
+}
+
+function closeSQ(){
+  document.getElementById("sqOverlay").classList.remove("show");
+}
+
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"){closeVid();closeSQ();}
+});
+</script>
+</body>
+</html>
