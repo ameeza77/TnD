@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T&D Learning Journey</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Poppins', sans-serif; background: #0f1923; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+  /* HEADER */
+  .header { width: 100%; background: linear-gradient(135deg, #1a3a5c, #0d2137); text-align: center; padding: 1.2rem 1rem; border-bottom: 4px solid #e8a020; }
+  .header-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase; color: #e8a020; border: 1px solid rgba(232,160,32,0.4); padding: 0.25rem 0.9rem; border-radius: 20px; margin-bottom: 0.6rem; }
+  .header h1 { font-size: clamp(1.4rem, 4vw, 2.2rem); font-weight: 700; color: #fff; }
+  .header h1 span { color: #e8a020; }
+  .header p { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-top: 0.3rem; }
+
+  /* MAP VIEW */
+  #mapView { width: 100%; max-width: 1100px; margin: 2rem auto; padding: 0 1.2rem; }
+  .map-container { position: relative; width: 100%; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .map-container img { width: 100%; height: auto; display: block; }
+
+  /* HOTSPOT */
+  .hotspot { position: absolute; transform: translate(-50%, -50%); cursor: pointer; z-index: 10; background: none; border: none; padding: 0; width: 3.2%; aspect-ratio: 1; }
+  .hotspot-inner { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: clamp(0.5rem, 1.1vw, 0.85rem); color: #fff; border: 2.5px solid rgba(255,255,255,0.85); transition: transform 0.2s; animation: hotpulse 2.5s infinite; }
+  .hotspot:hover .hotspot-inner { transform: scale(1.3); animation: none; box-shadow: 0 0 0 5px rgba(255,255,255,0.25); }
+  @keyframes hotpulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+  }
+  .phase1 .hotspot-inner { background: rgba(30,80,160,0.92); }
+  .phase2 .hotspot-inner { background: rgba(200,100,0,0.92); }
+  .phase3 .hotspot-inner { background: rgba(30,120,60,0.92); }
+
+  /* Hotspot positions */
+  #hs1 { left: 3.5%; top: 14%; }
+  #hs2 { left: 20%; top: 30%; }
+  #hs3 { left: 53%; top: 30%; }
+  #hs4 { left: 3.5%; top: 57%; }
+  #hs5 { left: 38%; top: 57%; }
+  #hs6 { left: 3.5%; top: 79%; }
+  #hs7 { left: 38%; top: 79%; }
+
+  /* VIDEO VIEW — fullscreen style */
+  #videoView {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 500;
+    flex-direction: column;
+  }
+  #videoView.active { display: flex; }
+
+  .video-screen {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-screen iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    position: absolute;
+    inset: 0;
+  }
+  .video-placeholder-full {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: rgba(255,255,255,0.5);
+    width: 100%;
+    height: 100%;
+  }
+  .video-placeholder-full .big-play { font-size: 4rem; opacity: 0.3; }
+  .video-placeholder-full p { font-size: 0.9rem; }
+
+  /* Station info overlay — top of video view */
+  .station-bar {
+    background: rgba(0,0,0,0.85);
+    padding: 0.8rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    border-bottom: 3px solid var(--sc, #1e50a0);
+  }
+  .station-num-badge {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--sc, #1e50a0);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .station-bar-title { color: #fff; font-size: 0.9rem; font-weight: 600; }
+  .station-bar-sub { color: rgba(255,255,255,0.5); font-size: 0.72rem; }
+
+  /* Bottom action bar */
+  .video-actions {
+    background: #0f1923;
+    padding: 1rem 1.2rem;
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+  }
+  .btn-back {
+    flex: 1;
+    padding: 0.85rem;
+    border-radius: 50px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    background: transparent;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-back:hover { border-color: #fff; background: rgba(255,255,255,0.08); }
+  .btn-quiz-main {
+    flex: 1;
+    padding: 0.85rem;
+    border-radius: 50px;
+    border: none;
+    background: #e8a020;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    transition: opacity 0.2s, transform 0.15s;
+    box-shadow: 0 4px 15px rgba(232,160,32,0.4);
+  }
+  .btn-quiz-main:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* QUIZ VIEW */
+  #quizView {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0f1923;
+    z-index: 600;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  #quizView.active { display: flex; }
+
+  .quiz-header {
+    background: linear-gradient(135deg, #1a3a5c, #0d2137);
+    padding: 1.2rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    border-bottom: 3px solid #e8a020;
+    flex-shrink: 0;
+  }
+  .quiz-back-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .quiz-header-title { color: #fff; font-weight: 700; font-size: 0.95rem; }
+  .quiz-header-sub { color: rgba(255,255,255,0.5); font-size: 0.72rem; }
+
+  .quiz-content {
+    flex: 1;
+    padding: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+  .quiz-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .quiz-q-num {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--sc, #1e50a0);
+    margin-bottom: 0.5rem;
+  }
+  .quiz-q-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a2e4a;
+    line-height: 1.45;
+    margin-bottom: 0.9rem;
+  }
+  .quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+  .quiz-opt {
+    padding: 0.65rem 1rem;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 0.82rem;
+    color: #374151;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+    transition: border-color 0.15s, background 0.15s;
+    font-weight: 500;
+  }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--sc, #1e50a0); background: #f0f4ff; }
+  .quiz-opt.correct { background: #d1fae5; border-color: #10b981; color: #065f46; font-weight: 600; }
+  .quiz-opt.wrong { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+  .quiz-feedback-box {
+    margin-top: 0.8rem;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: none;
+  }
+  .quiz-feedback-box.show { display: block; }
+  .quiz-feedback-box.correct { background: #d1fae5; color: #065f46; }
+  .quiz-feedback-box.wrong { background: #fee2e2; color: #991b1b; }
+
+  .footer { width: 100%; text-align: center; padding: 1rem; font-size: 0.7rem; color: rgba(255,255,255,0.2); }
+  .footer span { color: #e8a020; }
+</style>
+</head>
+<body>
+
+<!-- ══ MAP VIEW ══ -->
+<div class="header">
+  <div class="header-tag">Training & Development</div>
+  <h1>T&D <span>Learning</span> Journey</h1>
+  <p>Click on any station to explore · A Continuous Cycle for Performance Improvement</p>
+</div>
+
+<div id="mapView">
+  <div class="map-container">
+    <img src="map.jpg" alt="T&D Learning Journey Map">
+
+    <button class="hotspot phase1" id="hs1" onclick="openStation('s1')"><div class="hotspot-inner">1</div></button>
+    <button class="hotspot phase1" id="hs2" onclick="openStation('s2')"><div class="hotspot-inner">2</div></button>
+    <button class="hotspot phase1" id="hs3" onclick="openStation('s3')"><div class="hotspot-inner">3</div></button>
+    <button class="hotspot phase2" id="hs4" onclick="openStation('s4')"><div class="hotspot-inner">4</div></button>
+    <button class="hotspot phase2" id="hs5" onclick="openStation('s5')"><div class="hotspot-inner">5</div></button>
+    <button class="hotspot phase3" id="hs6" onclick="openStation('s6')"><div class="hotspot-inner">6</div></button>
+    <button class="hotspot phase3" id="hs7" onclick="openStation('s7')"><div class="hotspot-inner">7</div></button>
+  </div>
+</div>
+<div class="footer"><span>Training & Development</span> · Interactive Learning Map · Saito University College</div>
+
+<!-- ══ VIDEO VIEW ══ -->
+<div id="videoView">
+  <div class="station-bar" id="stationBar">
+    <div class="station-num-badge" id="vNum">1</div>
+    <div>
+      <div class="station-bar-title" id="vTitle"></div>
+      <div class="station-bar-sub" id="vSub"></div>
+    </div>
+  </div>
+  <div class="video-screen" id="videoScreen"></div>
+  <div class="video-actions">
+    <button class="btn-back" onclick="backToMap()">🗺️ &nbsp;Back to Map</button>
+    <button class="btn-quiz-main" onclick="openQuiz()">📝 &nbsp;Take Quiz</button>
+  </div>
+</div>
+
+<!-- ══ QUIZ VIEW ══ -->
+<div id="quizView">
+  <div class="quiz-header" id="quizHeader">
+    <button class="quiz-back-btn" onclick="backToVideo()">←</button>
+    <div>
+      <div class="quiz-header-title" id="qTitle"></div>
+      <div class="quiz-header-sub" id="qSub"></div>
+    </div>
+  </div>
+  <div class="quiz-content" id="quizContent"></div>
+</div>
+
+<script>
+const stations = {
+  s1: { num:'1', title:'Entrance', sub:'Introduction to Training & Development', phase:'Phase 1 — Before Training', color:'#1e50a0', colorLight:'#e8f0fb', video:null,
+    quiz:[
+      { q:'What does T&D stand for?', opts:['Talent & Discipline','Training & Development','Tasks & Duties','Teams & Departments'], ans:1 },
+      { q:'T&D is a planned process within which field?', opts:['Finance Management','Operations Management','Human Resource Management','Strategic Management'], ans:2 }
+    ],
+  },
+  s2: { num:'2', title:'Reception Area', sub:'Importance of Prioritising Training Needs', phase:'Phase 1 — Before Training', color:'#1e50a0', colorLight:'#e8f0fb', video:null,
+    quiz:[
+      { q:'Why must organizations prioritise training needs?', opts:['Because training is optional','Due to limited budget & time','Because all training is equal','Managers prefer less training'], ans:1 },
+      { q:'What is TNA?', opts:['Training Network Analysis','Training Needs Analysis','Talent Needs Assessment','Team Needs Audit'], ans:1 }
+    ],
+  },
+  s3: { num:'3', title:'Manager Decision Area', sub:'Factors in Training Prioritisation', phase:'Phase 1 — Before Training', color:'#1e50a0', colorLight:'#e8f0fb', video:null,
+    quiz:[
+      { q:'Which is NOT a factor in training prioritisation?', opts:['Relevance','Cost','Employee age','Time'], ans:2 },
+      { q:'What does "Relevance" mean in training prioritisation?', opts:['Training is cheap','Training addresses a real performance gap','Training is short','Training is online'], ans:1 }
+    ],
+  },
+  s4: { num:'4', title:'Training Room', sub:'Training Implementation', phase:'Phase 2 — During Training', color:'#c86400', colorLight:'#fef3e2', video:null,
+    quiz:[
+      { q:'Which is a learning activity during training?', opts:['Sleeping','Role-play simulation','Reading only','Watching TV'], ans:1 },
+      { q:'What should a trainer monitor during training?', opts:['Social media','Attendance & participation','Room temperature only','Lunch menu'], ans:1 }
+    ],
+  },
+  s5: { num:'5', title:'Evaluation Area', sub:'Training Evaluation — Kirkpatrick Model', phase:'Phase 2 — During Training', color:'#c86400', colorLight:'#fef3e2', video:null,
+    quiz:[
+      { q:'What does Level 1 (Reaction) measure?', opts:['Business results','How participants feel about training','Skills applied at work','Knowledge gained'], ans:1 },
+      { q:'Level 3 (Behaviour) measures what?', opts:['Participant reactions','Knowledge learned','Whether skills are applied at work','Business ROI'], ans:2 }
+    ],
+  },
+  s6: { num:'6', title:'Workplace Area', sub:'Transfer of Training', phase:'Phase 3 — After Training', color:'#1e784a', colorLight:'#e6f4ec', video:null,
+    quiz:[
+      { q:'What is "Transfer of Training"?', opts:['Transferring employees','Applying learned skills at the workplace','Moving training to another location','Sending training materials'], ans:1 },
+      { q:'Who plays a critical role in supporting training transfer?', opts:['Customers','Competitor companies','Supervisors & managers','IT department'], ans:2 }
+    ],
+  },
+  s7: { num:'7', title:'Results / ROI Area', sub:'Training Outcomes & Return on Investment', phase:'Phase 3 — After Training', color:'#1e784a', colorLight:'#e6f4ec', video:null,
+    quiz:[
+      { q:'What is ROI in training context?', opts:['Return on Investment','Record of Improvement','Rate of Instruction','Review of Implementation'], ans:0 },
+      { q:'Which is a training outcome?', opts:['Higher absenteeism','Lower productivity','Better performance','More errors'], ans:2 }
+    ],
+  }
+};
+
+let currentStation = null;
+
+function openStation(key) {
+  currentStation = key;
+  const r = stations[key];
+
+  // Set color vars
+  document.getElementById('videoView').style.setProperty('--sc', r.color);
+  document.getElementById('stationBar').style.borderBottomColor = r.color;
+  document.getElementById('vNum').style.background = r.color;
+  document.getElementById('vNum').textContent = r.num;
+  document.getElementById('vTitle').textContent = r.title;
+  document.getElementById('vSub').textContent = r.sub + ' · ' + r.phase;
+
+  // Video screen
+  const screen = document.getElementById('videoScreen');
+  if (r.video) {
+    screen.innerHTML = `<iframe src="https://www.youtube.com/embed/${r.video}?autoplay=1" allowfullscreen></iframe>`;
+  } else {
+    screen.innerHTML = `<div class="video-placeholder-full"><div class="big-play">▶</div><p>Video coming soon</p></div>`;
+  }
+
+  // Show video view
+  document.getElementById('mapView').style.display = 'none';
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.footer').style.display = 'none';
+  document.getElementById('videoView').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function backToMap() {
+  document.getElementById('videoView').classList.remove('active');
+  document.getElementById('mapView').style.display = '';
+  document.querySelector('.header').style.display = '';
+  document.querySelector('.footer').style.display = '';
+  document.body.style.overflow = '';
+}
+
+function openQuiz() {
+  const r = stations[currentStation];
+  document.getElementById('quizView').style.setProperty('--sc', r.color);
+  document.getElementById('qTitle').textContent = '📝 Quiz — ' + r.title;
+  document.getElementById('qSub').textContent = r.sub;
+
+  const content = document.getElementById('quizContent');
+  content.innerHTML = r.quiz.map((q, qi) => `
+    <div class="quiz-card">
+      <div class="quiz-q-num">Question ${qi+1}</div>
+      <div class="quiz-q-text">${q.q}</div>
+      <div class="quiz-opts">
+        ${q.opts.map((o,oi) => `<button class="quiz-opt" onclick="checkAns(this,${oi},${q.ans},${qi})">${o}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback-box" id="qfb${qi}"></div>
+    </div>
+  `).join('');
+
+  document.getElementById('videoView').classList.remove('active');
+  document.getElementById('quizView').classList.add('active');
+}
+
+function backToVideo() {
+  document.getElementById('quizView').classList.remove('active');
+  document.getElementById('videoView').classList.add('active');
+}
+
+function checkAns(btn, selected, correct, qi) {
+  const opts = btn.closest('.quiz-opts').querySelectorAll('.quiz-opt');
+  opts.forEach(o => o.disabled = true);
+  const fb = document.getElementById('qfb'+qi);
+  if (selected === correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✅ Correct! Well done!';
+    fb.className = 'quiz-feedback-box show correct';
+  } else {
+    btn.classList.add('wrong');
+    opts[correct].classList.add('correct');
+    fb.textContent = '❌ Not quite. The correct answer is highlighted in green.';
+    fb.className = 'quiz-feedback-box show wrong';
+  }
+}
+</script>
+</body>
+</html>
